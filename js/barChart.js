@@ -10,10 +10,11 @@ class Barchart {
     this.config = {
       parentElement: _config.parentElement,
       colorScale: _config.colorScale,
-      containerWidth: _config.containerWidth || 1000,
-      containerHeight: _config.containerHeight || 700,
+      containerWidth: _config.containerWidth || 800,
+      containerHeight: _config.containerHeight || 600,
       margin: _config.margin || { top: 40, right: 20, bottom: 70, left: 40 },
-      title: _config.title || "Bar Chart",
+      title:
+        _config.title || "Mean Percentage of Health Conditions by Category",
       legendHeight: 20,
       legendSpacing: 10,
       tooltipPadding: 10,
@@ -29,7 +30,6 @@ class Barchart {
   initVis() {
     let vis = this;
     const mock2 = vis.mockData2;
-    console.log(mock2);
 
     // Calculate inner chart size. Margin specifies the space around the actual chart.
     vis.width =
@@ -145,7 +145,6 @@ class Barchart {
 
     // Update legend
     vis.updateLegend();
-
     vis.renderVis();
   }
 
@@ -182,7 +181,10 @@ class Barchart {
       .append("rect")
       .attr("width", 20)
       .attr("height", vis.config.legendHeight)
-      .attr("fill", (d) => vis.colorScale(d));
+      .attr("fill", (d) => {
+        console.log(vis.colorScale(d), d);
+        return vis.colorScale(d);
+      });
 
     // Add text labels
     legendItems
@@ -199,8 +201,6 @@ class Barchart {
    */
   renderVis() {
     let vis = this;
-    const mockData = formatData(mock2);
-    console.log(mockData);
     var x = d3.scaleBand().domain(keys).range([0, vis.width]).padding([0.2]);
 
     // Add rectangles
@@ -218,7 +218,6 @@ class Barchart {
       // Add tooltip interactions
       .on("mousemove", function (d) {
         // Highlight the bar when hovered
-        console.log(d);
         d3.select(this)
           .transition()
           .duration(100)
@@ -236,6 +235,10 @@ class Barchart {
               d
             )}}>${formatAttribute(d.key)}: ${Math.round(d.count)}%</div>
           `);
+      })
+      .on("click", (d) => {
+        choroplethMap1.config.attribute = d.key;
+        choroplethMap1.updateVis();
       })
 
       .on("mouseleave", function () {
@@ -275,6 +278,6 @@ class Barchart {
       .attr("y", -30)
       .attr("text-anchor", "middle")
       .style("font-size", "14px")
-      .text("Value (%)");
+      .text("Percent (%)");
   }
 }

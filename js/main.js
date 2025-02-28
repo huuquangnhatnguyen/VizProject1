@@ -29,7 +29,7 @@ function changeSelectHandler() {
   console.log(test.value);
 }
 
-let mean, attribute, choroplethMap1, barchart;
+let mean, attribute, choroplethMap1, barchart, groupedBarChart;
 
 Promise.all([
   d3.json("data/counties-10m.json"),
@@ -91,13 +91,34 @@ Promise.all([
       statsData
     );
     barchart.updateVis();
+
+    // Define national average data
+    const nationalAverages = [
+      { key: "percent_high_cholesterol", count: 33.1 },
+      { key: "percent_high_blood_pressure", count: 32.3 },
+      { key: "percent_coronary_heart_disease", count: 6.2 },
+      { key: "percent_stroke", count: 3.0 },
+    ];
+
+    // Initialize the grouped bar chart
+    groupedBarChart = new GroupedBarchart(
+      {
+        parentElement: "#bar-chart-container",
+        containerWidth: 800,
+        containerHeight: 400,
+        margin: { top: 50, right: 50, bottom: 90, left: 50 },
+      },
+      nationalAverages
+    );
+
+    // Initial render
+    groupedBarChart.updateVis();
   })
   .catch((error) => console.error(error));
 
 const test = document.getElementById("selectAttribute");
 // console.log(test.value);
 test.addEventListener("change", () => {
-  console.log(test.value);
   choroplethMap1.config.attribute = test.value;
   // console.log(choroplethMap1.config.attribute);
   choroplethMap1.updateVis();

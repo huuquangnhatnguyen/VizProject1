@@ -6,10 +6,12 @@
     <link rel="stylesheet" href="css/style.css" />
   </head>
   <body>
-    <h1>US Counties</h1>
+    <h1 style="margin: 0 auto; width: fit-content">
+      US Counties vs Health Heart Diseases
+    </h1>
 
     <div>
-      <h2>Choose the attributes</h2>
+      <h2 style="margin: 0 auto">Choose the attributes</h2>
       <fieldset>
         <select id="selectAttribute" autofocus size="4" multiple>
           <option value="percent_high_cholesterol" selected>
@@ -32,9 +34,13 @@
         <div class="viz"></div>
         <div id="tooltip"></div>
       </div>
-      <div class="container-viz">
+      <!-- <div class="container-viz">
         <div class="viz2" id="my_dataviz"><svg id="barchart"></svg></div>
         <div id="tooltip2"></div>
+      </div> -->
+      <div>
+        <svg id="bar-chart-container"></svg>
+        <div id="tooltip3"></div>
       </div>
     </div>
 
@@ -68,5 +74,6 @@
     <script src="js/choroplethMap.js"></script>
     <script src="js/main.js"></script>
     <script src="js/barChart.js"></script>
+    <script src="js/groupedBarChart.js"></script>
   </body>
 </html>

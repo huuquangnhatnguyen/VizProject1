@@ -9,7 +9,7 @@ class ChoroplethMap {
     this.config = {
       parentElement: _config.parentElement,
       containerWidth: _config.containerWidth || 1000,
-      containerHeight: _config.containerHeight || 700,
+      containerHeight: _config.containerHeight || 600,
       margin: _config.margin || { top: 30, right: 10, bottom: 10, left: 10 },
       tooltipPadding: 10,
       legendBottom: 50,
@@ -36,7 +36,9 @@ class ChoroplethMap {
   initVis() {
     let vis = this;
     let attribute = vis.config.attribute;
-
+    const extent = d3.extent(vis.data.objects.counties.geometries, (d) => {
+      return d.properties[attribute];
+    });
     // // Calculate inner chart size. Margin specifies the space around the actual chart.
     vis.width = vis.config.containerWidth;
     vis.height = vis.config.containerHeight;
@@ -65,6 +67,11 @@ class ChoroplethMap {
       .translate([vis.width / 2, vis.height / 2])
       .scale(vis.width);
 
+    vis.colorScale = d3
+      .scaleLinear()
+      .domain(extent)
+      .range(["#fff", "#000"])
+      .interpolate(d3.interpolateHcl);
     vis.path = d3.geoPath().projection(vis.projection);
 
     vis.g = vis.svg
@@ -93,7 +100,7 @@ class ChoroplethMap {
       // `translate(${vis.config.margin.left}, ${
       //   vis.height + vis.config.margin.top + 20
       // })`
-      `translate(${100}, ${100})`
+      `translate(${50}, ${50})`
     );
   }
 
@@ -110,21 +117,40 @@ class ChoroplethMap {
       .scaleLinear()
       .domain(extent)
       .range(
-        attribute === "percent_high_cholesterol"
-          ? ["#fff", "#00265B"]
-          : attribute === "percent_high_blood_pressure"
+        vis.config.attribute === "percent_high_cholesterol"
           ? ["#fff", "#B6995A"]
-          : attribute === "percent_coronary_heart_disease"
+          : vis.config.attribute === "percent_high_blood_pressure"
           ? ["#fff", "#275031"]
-          : ["#fff", "#E41134"]
+          : vis.config.attribute === "percent_coronary_heart_disease"
+          ? ["#fff", "#E41134"]
+          : ["#fff", "#00265B"]
       )
       .interpolate(d3.interpolateHcl);
 
+    vis.g
+      .append("path")
+      .datum(
+        topojson.mesh(vis.us, vis.us.objects.states, function (a, b) {
+          return a !== b;
+        })
+      )
+      .attr("id", "state-borders")
+      .attr("d", vis.path);
+    d3.selectAll(".active").remove();
     // Update legend with new scale
     this.updateLegend(extent);
     this.renderVis();
+    this.updateTitle(formatAttribute(attribute) + " by County");
   }
+  updateTitle(newTitle) {
+    let vis = this;
 
+    // Update the title in the config
+    vis.config.title = newTitle;
+
+    // Update the title element in the SVG
+    vis.svg.select(".chart-title").text(vis.config.title);
+  }
   updateLegend(extent) {
     let vis = this;
 
@@ -249,11 +275,11 @@ class ChoroplethMap {
       .attr("y2", 4)
       .attr("stroke", "#ccc")
       .attr("stroke-width", 1);
-
+    // d3.selectAll(".active").style("opacity", "0");
     vis.counties = vis.g
       .append("g")
       .attr("id", "counties")
-      .selectAll("path")
+      .selectAll(".county")
       .data(topojson.feature(vis.us, vis.us.objects.counties).features)
       .enter()
       .append("path")
@@ -268,7 +294,7 @@ class ChoroplethMap {
         }
       })
       .style("stroke", "transparent")
-      .style("opacity", 0.8);
+      .style("opacity", 1);
 
     vis.counties
       .on("mousemove", (d) => {
@@ -283,27 +309,23 @@ class ChoroplethMap {
           .style("display", "block")
           .style("left", event.pageX + vis.config.tooltipPadding + "px")
           .style("top", event.pageY + vis.config.tooltipPadding + "px").html(`
-                        <div class="tooltip-title">${d.properties.name}</div>
-                        <div>${tooltipData}</div>
-                      `);
+                      <div class="tooltip-title">${d.properties.name}</div>
+                      <div>${tooltipData}</div>
+                    `);
       })
       .on("mouseover", mouseOver)
       .on("mouseleave", mouseLeave)
       .on("click", function (d) {
+        // Highlight the selected county
         d3.selectAll(".county").style("opacity", "0.2");
-        d3.select(this).attr("class", "active");
-        d3.selectAll(".active").style("opacity", "1");
-      });
+        d3.select(this).style("opacity", "1");
 
-    vis.g
-      .append("path")
-      .datum(
-        topojson.mesh(vis.us, vis.us.objects.states, function (a, b) {
-          return a !== b;
-        })
-      )
-      .attr("id", "state-borders")
-      .attr("d", vis.path);
+        // Extract county data for all health metrics
+        const countyData = extractCountyData(d.properties);
+
+        // Update the grouped bar chart with this county's data
+        groupedBarChart.updateCountyData(countyData, d.properties.name);
+      });
   }
 }
 // helper functions
@@ -332,3 +354,27 @@ let mouseLeave = function (d) {
 
   d3.select(this).transition().duration(200).style("stroke", "transparent");
 };
+
+// Function to extract county-specific data for all health metrics
+function extractCountyData(properties) {
+  // Create an array of data points for the bar chart
+  return [
+    {
+      key: "percent_high_cholesterol",
+      count: properties.percent_high_cholesterol || 0,
+    },
+    {
+      key: "percent_high_blood_pressure",
+      count: properties.percent_high_blood_pressure || 0,
+    },
+    {
+      key: "percent_coronary_heart_disease",
+      count: properties.percent_coronary_heart_disease || 0,
+    },
+    { key: "percent_stroke", count: properties.percent_stroke || 0 },
+  ];
+}
+
+// Example initialization code (add this to your main script)
+// ------------------------------------------------------
+// Assume we already have a choroplethMap object
